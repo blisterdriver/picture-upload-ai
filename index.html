@@ -48,7 +48,16 @@
         }
 
         /* --- LAYOUT (Mobile First) --- */
-        #app-container { height: 100vh; width: 100vw; position: relative; }
+        #app-container {
+            width: 100vw;
+            position: relative;
+            /* --- THE FIX IS HERE --- */
+            /* Use 100vh as a fallback for older browsers */
+            height: 100vh; 
+            /* Use 100dvh for modern browsers to account for the mobile address bar */
+            height: 100dvh;
+        }
+        
         #sidebar-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 998; opacity: 0;
@@ -69,7 +78,11 @@
 
         /* --- DESKTOP LAYOUT OVERRIDE --- */
         @media (min-width: 769px) {
-            #app-container { display: flex; }
+            #app-container {
+                display: flex;
+                /* On desktop, the viewport is stable, so 100vh is fine */
+                height: 100vh;
+            }
             #sidebar {
                 position: static; transform: translateX(0);
                 flex-shrink: 0; max-width: 280px;
@@ -290,14 +303,10 @@
     </div>
 
     <script>
+        // JAVASCRIPT IS UNCHANGED
         const API_KEY = "AIzaSyC4ZJKSp8ZmOJtRAxAoxC58MdF4K-8cHXQ";
-        
-        // The `-latest` tag ensures you're always using the most up-to-date version
-        // of the gemini-1.5-flash model without needing to change the code.
         const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
-        
         const $ = (selector) => document.querySelector(selector);
-        
         const modalOverlay = $('#custom-modal-overlay');
         const modalMessage = $('#modal-message');
         const modalConfirmBtn = $('#modal-confirm-btn');
@@ -308,13 +317,9 @@
         let activeChatId = null;
         let uploadedFiles = [];
         let isTutorMode = false;
-        
-        // --- Custom Modal & Notification Functions ---
         function showConfirmationModal(message, onConfirm, isDanger = false) { modalMessage.textContent = message; confirmCallback = onConfirm; modalConfirmBtn.classList.toggle('danger', isDanger); modalOverlay.classList.add('open'); }
         function hideConfirmationModal() { modalOverlay.classList.remove('open'); confirmCallback = null; }
         function showNotification(message) { const notification = document.createElement('div'); notification.textContent = message; notification.style.cssText = `position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background-color: var(--error-color); color: white; padding: 10px 20px; border-radius: 8px; z-index: 1001; opacity: 0; transition: opacity 0.3s ease, transform 0.3s ease; transform: translate(-50%, -20px);`; document.body.appendChild(notification); setTimeout(() => { notification.style.opacity = 1; notification.style.transform = 'translateX(-50%)'; }, 10); setTimeout(() => { notification.style.opacity = 0; notification.style.transform = 'translate(-50%, -20px)'; setTimeout(() => notification.remove(), 300); }, 3000); }
-        
-        // --- Event Listeners Setup ---
         function setupEventListeners() {
             document.addEventListener('DOMContentLoaded', () => {
                 marked.setOptions({ highlight: function(code, lang) { const language = hljs.getLanguage(lang) ? lang : 'plaintext'; return hljs.highlight(code, { language }).value; }, langPrefix: 'hljs language-', breaks: true });
@@ -336,14 +341,11 @@
             $('#chat-messages').addEventListener('click', handleMessageAction);
             $('#tutor-mode-btn').addEventListener('click', toggleTutorMode);
         }
-        
         const toggleSidebar = () => { $('#sidebar').classList.toggle('open'); $('#sidebar-overlay').classList.toggle('open'); };
         const autoGrowTextarea = () => { const input = $('#chat-input'); input.style.height = 'auto'; input.style.height = (input.scrollHeight) + 'px'; };
-        
         function toggleTutorMode() { showConfirmationModal("Switching modes will start a new chat. Do you want to continue?", () => { isTutorMode = !isTutorMode; localStorage.setItem('ai-tutor-mode', isTutorMode); updateTutorButtonState(); startNewChat(); }); }
         function updateTutorButtonState() { const btn = $('#tutor-mode-btn'); if (isTutorMode) { btn.classList.add('active'); btn.textContent = 'Tutor Mode: ON'; } else { btn.classList.remove('active'); btn.textContent = 'Tutor Mode: OFF'; } }
         function loadTutorModeState() { isTutorMode = localStorage.getItem('ai-tutor-mode') === 'true'; updateTutorButtonState(); }
-        
         async function handleSendMessage(e, isEdit = false, editIndex = -1) {
             e.preventDefault(); const userText = $('#chat-input').value.trim(); if (userText === "" && uploadedFiles.length === 0 && !isEdit) return;
             if (!activeChatId) startNewChat(false);
@@ -356,12 +358,8 @@
                 saveCurrentChat(); updateHistorySidebar();
             } catch (error) { console.error("API Error:", error); loadingMessage.remove(); displayMessage(-1, 'error', `Error: ${error.message || 'Failed to get response.'}`); }
         }
-
         async function callGeminiAPI() {
-            const generationConfig = { temperature: 0.9, maxOutputTokens: 2048, topP: 1.0, topK: 1, };
-            const requestBody = { contents: currentChatHistory, generationConfig };
-
-            // --- PROMPTS UPDATED HERE ---
+            const generationConfig = { temperature: 0.9, maxOutputTokens: 2048, topP: 1.0, topK: 1, }; const requestBody = { contents: currentChatHistory, generationConfig };
             if (isTutorMode) {
                 requestBody.systemInstruction = {
                     parts: [{ text: "You are a Bangladeshi AI tutor developed by Rohan. You are nice and professional and the students give you pictures or ask you something. You solve that question with explanation that is related to textbook or guide style. The way that people, the students are familiar. You are nice, friendly and most importantly professional. Do not be verbose and do not be too short either. Just give the right amount of answer and also do not use any sort of emojis. Be nice. Good luck. if an image sent by the user lacks information then ask nicely to retake the picture in a good manner." }]
@@ -371,12 +369,8 @@
                     parts: [{ text: "You are an AI assistant developed by Rohan, not anything else. If someone asks, you tell it this. And you are nice to people. You are professional. And most importantly, you are relatable to people. You can relate to people if they say something and they want to be related to. You know what I'm saying? Anyway, good luck and be nice and relatable and helpful also most importantly. Don't be too verbose. Don't be too short of a reply. Just the right amount, please. dont be annoying." }]
                 };
             }
-
-            const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) });
-            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); }
-            return response.json();
+            const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody) }); if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.error.message); } return response.json();
         }
-
         function displayMessage(index, role, text, files = []) {
             const messageEl = document.createElement('div'); messageEl.className = `message ${role}`; messageEl.dataset.index = index;
             let fileHTML = ''; if (files.length > 0) { fileHTML += '<div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom: 8px;">'; files.forEach(file => { const src = `data:${file.mimeType};base64,${file.base64}`; if (file.mimeType.startsWith('image/')) { fileHTML += `<img src="${src}" style="max-width:80px; border-radius:4px;">`; } else if (file.mimeType.startsWith('video/')) { fileHTML += `<video controls style="max-width:120px; border-radius:4px;"><source src="${src}" type="${file.mimeType}"></video>`; } }); fileHTML += '</div>'; } messageEl.innerHTML = fileHTML;
