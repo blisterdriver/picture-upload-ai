@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Assistant</title>
+
+    <!-- Libraries for Markdown, LaTeX, and Code Highlighting -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0KOVEMutoExTqlSFyL5NqN4dHRnPse9WBUSzvsA5longdGhwcskNA" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+
     <style>
         :root {
             --bg-color: #121212;
@@ -156,6 +165,29 @@
         }
         .action-btn { background: none; border: none; color: var(--text-secondary-color); cursor: pointer; font-size: 0.9rem; }
 
+        /* Markdown & KaTeX Styling */
+        .message-content p { margin-bottom: 0.5em; }
+        .message-content p:last-child { margin-bottom: 0; }
+        .message-content ul, .message-content ol { padding-left: 1.5em; margin-bottom: 0.5em; }
+        .message-content pre {
+            background-color: #282c34; /* atom one dark background */
+            color: #abb2bf;
+            padding: 1em;
+            border-radius: 8px;
+            margin: 0.5em 0;
+            overflow-x: auto;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .message-content code { font-family: 'Courier New', Courier, monospace; }
+        .message-content pre code { padding: 0; background: none; }
+        .message-content blockquote {
+            border-left: 3px solid var(--primary-color);
+            padding-left: 1em;
+            margin: 0.5em 0;
+            color: var(--text-secondary-color);
+        }
+        .katex-display { overflow-x: auto; overflow-y: hidden; }
+
         /* --- Input Area --- */
         #chat-form-container { padding: 1rem; border-top: 1px solid var(--border-color); background-color: var(--bg-color); flex-shrink: 0; }
         #file-previews { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem; }
@@ -248,6 +280,15 @@
         // --- Event Listeners Setup ---
         function setupEventListeners() {
             document.addEventListener('DOMContentLoaded', () => {
+                // Configure Markdown and Code Highlighting library
+                marked.setOptions({
+                    highlight: function(code, lang) {
+                        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
+                        return hljs.highlight(code, { language }).value;
+                    },
+                    langPrefix: 'hljs language-',
+                    breaks: true
+                });
                 loadTutorModeState();
                 loadAllChats();
             });
@@ -376,12 +417,12 @@
 
             if (isTutorMode) {
                 requestBody.systemInstruction = {
-                    parts: [{ text: "You are an expert tutor for Bangladeshi students. All your responses must be in Bangla. Explain concepts clearly and concisely, following the style of NCTB textbooks. Be helpful, encouraging, and provide explanations that are easy to understand for school-level students. Do not be overly verbose or too brief. if the user asks what ai are you or what model are you or any variations of these, you tell im an ai by rohan. nothing else exactly that." }]
+                    parts: [{ text: "You are an expert tutor for Bangladeshi students. All your responses must be in Bangla. Explain concepts clearly and concisely, following the style of NCTB textbooks. Be helpful, encouraging, and provide explanations that are easy to understand for school-level students. Do not be overly verbose or too brief. Use Markdown and LaTeX for formatting and equations." }]
                 };
             } else {
                 // Default AI Assistant persona
                 requestBody.systemInstruction = {
-                    parts: [{ text: "You are a helpful and friendly AI Assistant. Keep your answers concise and to the point. You can process text, images, and videos. Be professional and welcoming. and most importantly you are relatable. you can relate to users and you understand the context and everything make it really impressive. so relatable almsot liek mind reading. and if the user asks vague questions and you need more information then just ask questions that will help you give a better response. be nice. be accurate" }]
+                    parts: [{ text: "You are Rohan, a helpful and friendly AI Assistant. Keep your answers concise and to the point. You can process text, images, and videos. Be professional and welcoming. Use Markdown and LaTeX for formatting and equations where appropriate." }]
                 };
             }
 
@@ -402,34 +443,50 @@
             messageEl.className = `message ${role}`;
             messageEl.dataset.index = index;
             
-            let contentHTML = '';
+            let fileHTML = '';
             if (files.length > 0) {
-                contentHTML += '<div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom: 8px;">';
+                fileHTML += '<div style="display:flex; flex-wrap:wrap; gap:5px; margin-bottom: 8px;">';
                 files.forEach(file => {
                     const src = `data:${file.mimeType};base64,${file.base64}`;
                     if (file.mimeType.startsWith('image/')) {
-                        contentHTML += `<img src="${src}" style="max-width:80px; border-radius:4px;">`;
+                        fileHTML += `<img src="${src}" style="max-width:80px; border-radius:4px;">`;
                     } else if (file.mimeType.startsWith('video/')) {
-                         contentHTML += `<video controls style="max-width:120px; border-radius:4px;"><source src="${src}" type="${file.mimeType}"></video>`;
+                         fileHTML += `<video controls style="max-width:120px; border-radius:4px;"><source src="${src}" type="${file.mimeType}"></video>`;
                     }
                 });
-                contentHTML += '</div>';
+                fileHTML += '</div>';
             }
-            
+            messageEl.innerHTML = fileHTML;
+
             if (text) {
-                const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>');
-                contentHTML += `<div class="message-content">${formattedText}</div>`;
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                // Parse Markdown and set as HTML
+                contentDiv.innerHTML = marked.parse(text);
+                messageEl.appendChild(contentDiv);
+                
+                // Render LaTeX within the newly added element
+                renderMathInElement(contentDiv, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '\\[', right: '\\]', display: true},
+                        {left: '$', right: '$', display: false},
+                        {left: '\\(', right: '\\)', display: false}
+                    ],
+                    throwOnError: false
+                });
             }
 
             if (role === 'user' || role === 'model') {
-                contentHTML += `
+                const actionsHTML = `
                     <div class="message-actions">
                         ${role === 'user' ? `<button class="action-btn edit-btn" title="Edit">✏️</button>` : ''}
                         <button class="action-btn delete-btn" title="Delete">🗑️</button>
                     </div>`;
+                messageEl.insertAdjacentHTML('beforeend', actionsHTML);
             }
             
-            messageEl.innerHTML = contentHTML;
             $('#chat-messages').appendChild(messageEl);
             $('#chat-messages').scrollTop = $('#chat-messages').scrollHeight;
             return messageEl;
@@ -501,7 +558,7 @@
                 }
             } else if (target.classList.contains('edit-btn')) {
                 const contentDiv = messageEl.querySelector('.message-content');
-                const originalText = currentChatHistory[index].parts[0].text;
+                const originalText = currentChatHistory[index].parts.find(p => p.text)?.text || '';
                 
                 const editForm = document.createElement('form');
                 editForm.style.display = 'flex';
