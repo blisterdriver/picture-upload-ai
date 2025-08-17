@@ -51,10 +51,7 @@
         #app-container {
             width: 100vw;
             position: relative;
-            /* --- THE FIX IS HERE --- */
-            /* Use 100vh as a fallback for older browsers */
             height: 100vh; 
-            /* Use 100dvh for modern browsers to account for the mobile address bar */
             height: 100dvh;
         }
         
@@ -80,7 +77,6 @@
         @media (min-width: 769px) {
             #app-container {
                 display: flex;
-                /* On desktop, the viewport is stable, so 100vh is fine */
                 height: 100vh;
             }
             #sidebar {
@@ -168,17 +164,55 @@
             margin: 0.5em 0; color: var(--text-secondary-color);
         }
 
-        /* --- LaTeX Customization --- */
-        .katex { font-size: 1.1em; letter-spacing: 0; word-spacing: normal; }
+        /*
+        ===============================================================
+        === LaTeX Customization & Readability (Heavily Commented) ===
+        ===============================================================
+        */
+        
+        /* This targets the main KaTeX container. */
+        .katex {
+            font-size: 1.1em;
+            
+            /* --- NON-TECHY: LETTER SPACING (Readability) --- */
+            /* This increases space BETWEEN letters/symbols. 0 is default. */
+            /* Try values like 0.05em, 0.08em, or 0.1em to see what you like. */
+            letter-spacing: 0.08em; 
+        }
+
+        /* --- THE SVG FIX IS HERE --- */
+        /* This targets the SVG elements KaTeX sometimes creates and prevents them from overflowing. */
+        .katex svg {
+            max-width: 100%;
+        }
+
+        /* This targets blocks of math displayed on their own line ($$ ... $$) */
         .katex-display {
-            overflow-x: auto; overflow-y: hidden;
-            padding: 0.5em 0.4em; margin: 0.2em 0;
-            line-height: 1.4; scrollbar-width: thin;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 0.5em 0.4em;
+            
+            /* This controls the space ABOVE and BELOW each equation block. */
+            margin: 0.2em 0;
+            
+            /* --- NON-TECHY: LINE HEIGHT (for multi-line formulas) --- */
+            /* This controls spacing INSIDE a single math block that has multiple lines. */
+            /* A value of 1.2 is TIGHT, 1.5 is standard. I've set it to tight. */
+            line-height: 1.2;
+
+            /* Themed scrollbar for a polished look */
+            scrollbar-width: thin;
             scrollbar-color: var(--primary-color) var(--surface-color);
         }
         .katex-display::-webkit-scrollbar { height: 6px; }
         .katex-display::-webkit-scrollbar-track { background: var(--surface-color); }
-        .katex-display::-webkit-scrollbar-thumb { background-color: var(--primary-color); border-radius: 6px; }
+        .katex-display::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 6px;
+        }
+        /*
+        ===============================================================
+        */
 
         /* --- Input Area --- */
         #chat-form-container { padding: 1rem; border-top: 1px solid var(--border-color); background-color: var(--bg-color); flex-shrink: 0; }
@@ -255,7 +289,7 @@
 <body>
 
     <div id="app-container">
-        <!-- Sidebar for Chat History -->
+        <!-- Sidebar and other HTML is unchanged -->
         <aside id="sidebar">
             <div class="sidebar-header">
                 <button id="new-chat-btn">＋ New Chat</button>
@@ -265,8 +299,6 @@
                 <button id="tutor-mode-btn">Tutor Mode</button>
             </div>
         </aside>
-
-        <!-- Main Chat Area -->
         <main id="chat-container">
             <div id="sidebar-overlay"></div>
             <div class="chat-header">
@@ -290,8 +322,6 @@
             </div>
         </main>
     </div>
-
-    <!-- Custom Modal for Confirmations -->
     <div id="custom-modal-overlay">
         <div id="custom-modal">
             <p id="modal-message">Are you sure?</p>
@@ -305,7 +335,7 @@
     <script>
         // JAVASCRIPT IS UNCHANGED
         const API_KEY = "AIzaSyC4ZJKSp8ZmOJtRAxAoxC58MdF4K-8cHXQ";
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-latest:generateContent?key=${API_KEY}`;
         const $ = (selector) => document.querySelector(selector);
         const modalOverlay = $('#custom-modal-overlay');
         const modalMessage = $('#modal-message');
