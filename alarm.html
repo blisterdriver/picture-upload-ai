@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Simple Alarm Timer</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      text-align: center; 
+      margin-top: 100px;
+    }
+    input { width: 60px; text-align: center; }
+    button { margin: 5px; padding: 8px 15px; }
+    #time { font-size: 2em; margin: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Alarm Timer</h1>
+  <p>
+    Minutes: <input type="number" id="minutes" value="0" min="0">
+    Seconds: <input type="number" id="seconds" value="10" min="0" max="59">
+  </p>
+  <button onclick="startTimer()">Start</button>
+  <button onclick="stopTimer()">Stop</button>
+  <div id="time">00:10</div>
+
+  <audio id="alarm-sound" loop>
+    <source src="https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg" type="audio/ogg">
+  </audio>
+
+  <script>
+    let timer;
+    let totalSeconds;
+    const display = document.getElementById("time");
+    const alarmSound = document.getElementById("alarm-sound");
+
+    function startTimer() {
+      const min = parseInt(document.getElementById("minutes").value) || 0;
+      const sec = parseInt(document.getElementById("seconds").value) || 0;
+      totalSeconds = min * 60 + sec;
+
+      if (totalSeconds <= 0) return alert("Set a valid time!");
+
+      clearInterval(timer);
+      updateDisplay();
+
+      timer = setInterval(() => {
+        totalSeconds--;
+        updateDisplay();
+        if (totalSeconds <= 0) {
+          clearInterval(timer);
+          triggerAlarm();
+        }
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timer);
+      alarmSound.pause();
+      alarmSound.currentTime = 0;
+    }
+
+    function updateDisplay() {
+      let m = Math.floor(totalSeconds / 60);
+      let s = totalSeconds % 60;
+      display.textContent = 
+        (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s;
+    }
+
+    function triggerAlarm() {
+      alarmSound.play();
+      if ("vibrate" in navigator) navigator.vibrate([500, 200, 500]);
+      if (Notification.permission === "granted") {
+        new Notification("⏰ Time’s up!");
+      }
+    }
+
+    // Ask notification permission on load
+    if ("Notification" in window) {
+      Notification.requestPermission();
+    }
+  </script>
+</body>
+</html>
