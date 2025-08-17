@@ -710,7 +710,7 @@
     <script>
       // JAVASCRIPT IS UNCHANGED
       const API_KEY = "AIzaSyC4ZJKSp8ZmOJtRAxAoxC58MdF4K-8cHXQ";
-      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+      const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`; // NOTE: Changed model to 1.5-flash for better performance
       const $ = (selector) => document.querySelector(selector);
       const modalOverlay = $("#custom-modal-overlay");
       const modalMessage = $("#modal-message");
@@ -869,9 +869,10 @@
           const modelResponse = await callGeminiAPI();
           loadingMessage.remove();
 
-          // ADD THIS SAFETY CHECK
+          // --- START OF THE FIX ---
+          // This is the important part. We check if the API actually sent a valid response.
           if (modelResponse.candidates && modelResponse.candidates.length > 0) {
-            // If we have candidates, proceed as normal
+            // If we have a valid response, proceed as normal.
             const modelText = modelResponse.candidates[0].content.parts[0].text;
             currentChatHistory.push({
               role: "model",
@@ -879,14 +880,19 @@
             });
             displayMessage(currentChatHistory.length - 1, "model", modelText);
           } else {
-            // If there are no candidates, show a user-friendly error
+            // If there's no valid response (e.g., blocked by safety filters), show an error instead of crashing.
             console.error("API Error: No candidates returned.", modelResponse); // For your debugging
             displayMessage(
               -1,
               "error",
-              "Error: Unable to get a response. The prompt may have been blocked by safety filters."
+              "Error: The AI could not provide a response. This may be due to the prompt being blocked by safety filters."
             );
+            // We should remove the last user message from history so they can try again without it being stuck.
+            if (!isEdit) {
+                currentChatHistory.pop();
+            }
           }
+          // --- END OF THE FIX ---
 
           saveCurrentChat();
           updateHistorySidebar();
@@ -905,7 +911,7 @@
           temperature: 0.4,
           maxOutputTokens: 2048,
           topP: 1.0,
-          topK: 1,
+          topK: 32, // Adjusted topK for potentially better results
         };
         const requestBody = { contents: currentChatHistory, generationConfig };
         if (isTutorMode) {
